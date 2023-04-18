@@ -3,45 +3,45 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using UnityEngine.Events;
-/// <summary>
-/// 
-/// damageable�ĳ������ 
-/// </summary>���ߣ����
+
+[Serializable]
+public class DamageEvent : UnityEvent<DamagerBase, DamageableBase>
+{ }
+
 public abstract class DamageableBase : MonoBehaviour
 {
-    public bool invulnerable;//�Ƿ��޵�
+    public bool invulnerable;
 
     [HideInInspector]
-    public Vector2 damageDirection;//�˺���Դ�ķ���
+    public Vector2 damageDirection;
 
-    public bool playerAttackCanGainSoul;//��ҹ���ʱ�ܵõ���
+    public bool playerAttackCanGainSoul;
 
-    public abstract void takeDamage(DamagerBase damager);//�ܵ��˺�ʱ����
+    public float beatBackRate;
 
-    [Serializable]
-    public class DamageEvent : UnityEvent<DamagerBase, DamageableBase>
-    { }
+    public abstract void takeDamage(DamagerBase damager);
 
-    public DamageEvent takeDamageEvent;
+
+    public DamageEvent takeDamageEvent = new DamageEvent();
 
     public AudioCue takeDamageAudio;
 
     public SfxSO takeDamageSfxSO;
 
 
-    protected virtual void Awake()//��awakeʱ������ ����趨
+    protected virtual void Awake()
     {
         setRigidbody2D();
     }
 
-    protected void setRigidbody2D()//ontriggerEnter�Ĵ�����Ҫ����һ���и���  ���ﱣ֤damable�и���
+    protected void setRigidbody2D()
     {
-        if(GetComponent<Rigidbody2D>()==null)//���û���ֶ��趨�ĸ��� ������һ��static����
+        if(GetComponent<Rigidbody2D>()==null)
         {
             gameObject.AddComponent<Rigidbody2D>();
-            gameObject.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;//Ĭ������static���� ���ڻ��ء�ǽ��  Dynamic������Ҫ�ֶ�����
+            gameObject.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;
         }
-        gameObject.GetComponent<Rigidbody2D>().sleepMode = RigidbodySleepMode2D.NeverSleep;//����������˯��״̬���޷���Ӧ��ײ
+        gameObject.GetComponent<Rigidbody2D>().sleepMode = RigidbodySleepMode2D.NeverSleep;
     }
 
 }

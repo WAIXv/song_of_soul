@@ -3,34 +3,27 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[Serializable]
-public enum SkillName
-{
-    FlameGeyser,
-    ShadowBlade,
-    LightningChain,
-    ArcaneBlast,
-    IceStorm
-}
 
 [Serializable]
 public abstract class SoulSkill : Hitter
 {
-    public SkillName skillName;
+    public EPlayerAttackType skillName;
     public int constPerSec = 1;
     public int constPerAttack = 0;
 
-    protected PlayerInfomation _playerInfomation;
+    //protected PlayerInfomation _playerInfomation;
     protected PlayerCharacter _playerCharacter;
 
-    protected SoulSkill()
-    {
-        //_playerInfomation = GetComponentInParent<PlayerInfomation>();
-    }
+    //protected SoulSkill()
+    //{
+    //    _playerCharacter = GetComponentInParent<PlayerCharacter>();
+    //    //_playerInfomation = GetComponentInParent<PlayerInfomation>();
+    //}
     
     protected void Start()
     {
         //Debug.LogError("START TIMER UPDATE");
+        _playerCharacter = GetComponentInParent<PlayerCharacter>();
         MonoManager.Instance.AddUpdateEvent(Timer.Instance.TimerUpdate);
     }
 

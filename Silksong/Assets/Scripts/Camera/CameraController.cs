@@ -23,7 +23,7 @@ public class CameraController : MonoBehaviour
     public CinemachineVirtualCamera mMainVirtualCamera;
     [Header("这个是用于切换的摄像机")]
     public CinemachineVirtualCamera mSecondVirtualCamera;
-
+    public CinemachineVirtualCamera mThirdVirtualCamera;
     public Trigger2DHidePath mCurHidePath = null;
     private CinemachineVirtualCamera mCurVCamera
     {
@@ -40,8 +40,12 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    [Header("这个是UI摄像机")]
+    public Camera mStageCamera;
+
     void Awake()
     {
+        print(gameObject.name);
         if (_instance != null)
         {
             GameObject bound = transform.Find("Boundary").gameObject;
@@ -56,6 +60,7 @@ public class CameraController : MonoBehaviour
         _instance = this;
     }
 
+  
     public void AfterChangeScene()
     {
         GameObject mainCameraBoundary = GameObject.Find("MainCameraBoundary");
@@ -67,6 +72,12 @@ public class CameraController : MonoBehaviour
         PolygonCollider2D polygon = mainCameraBoundary.GetComponent<PolygonCollider2D>();
         CinemachineConfiner confier = mMainVirtualCamera.GetComponent<CinemachineConfiner>();
         confier.m_BoundingShape2D = polygon;
+        
+        GameObject tempCam = GameObject.Find("TempCamera");
+        if (tempCam != null)
+        {
+            GameObject.Destroy(tempCam);
+        }
     }
 
     public void BeforeChangeScene()
@@ -75,5 +86,28 @@ public class CameraController : MonoBehaviour
         {
             mCurHidePath.BeforeChangeScene();
         }
+    }
+
+    public void BeforeEnterBound(Trigger2DHidePath trigger2DHidePath)
+    {
+        if (mCurHidePath != null)
+        {
+            mCurHidePath.ForceExitEvent();
+        }
+        mCurHidePath = trigger2DHidePath;
+    }
+
+    public void BeforeExitBound(Trigger2DHidePath trigger2DHidePath)
+    {
+        if (mCurHidePath == trigger2DHidePath)
+        {
+            mCurHidePath = null;
+        }
+    }
+
+    private bool usingOtherCam;
+    public void OnGetTargetCam()
+    {
+
     }
 }
