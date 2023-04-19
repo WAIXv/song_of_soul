@@ -226,7 +226,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   invulnerable: 1
   damageDirection: {x: 0, y: 0}
-  playerAttackCanGainSoul: 0
+  playerAttackCanGainSoul: 1
+  beatBackRate: 0
   takeDamageEvent:
     m_PersistentCalls:
       m_Calls: []
@@ -241,23 +242,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 459192923}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35df56b8bb4bf804183f74aba8df68cf, type: 3}
+  m_Script: {fileID: 11500000, guid: 1eeda163c70b3cb4ebb88ba92f608fd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  animator: {fileID: 459192928}
-  audios: {fileID: 0}
-  rigidbody2d: {fileID: 0}
-  damageable: {fileID: 0}
-  currentStateName: 
-  defaultStateName: Boss01_Part1_State
-  stateConfigs:
-  - {fileID: 11400000, guid: 6dc4ed8173596be43a3b14ef9e7d2ed8, type: 2}
-  anyStateConfig: {fileID: 11400000, guid: 2388c6b8dad3d80488501fb02e2582d3, type: 2}
-  player: {fileID: 0}
-  FaceLeftFirstOriginal: 1
-  beatBackRatio: 0
-  hasInvokedAnimationEvent: 0
-  isInvokingAnimationEvent: 0
+  _transitionTableSO: {fileID: 11400000, guid: 65d9a41b08fa2d741bf96f265cdfecfa, type: 2}
+  _debugger:
+    debugTransitions: 1
+    appendConditionsInfo: 1
+    appendActionsInfo: 1
+    currentState: 
 --- !u!95 &459192928
 Animator:
   serializedVersion: 3
@@ -319,7 +312,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 00504c1b75f4df341af8936f52546c17, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 0
+  m_FlipX: 1
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 8.533334, y: 8.533334}
@@ -723,6 +716,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4956274903834550138, guid: d55ddaf3e9dbfd749a56666a757de684, type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 4956274903834550138, guid: d55ddaf3e9dbfd749a56666a757de684, type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d55ddaf3e9dbfd749a56666a757de684, type: 3}
 --- !u!1 &1182206605
