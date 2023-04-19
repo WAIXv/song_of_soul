@@ -82,7 +82,7 @@ public class EnemySubFSMManager:EnemyFSMBaseState
         }
         else
         {
-            Debug.LogError("敌人状态不存在");
+            Debug.LogError("敌人状态不存在 " + state);
         }
         
     }

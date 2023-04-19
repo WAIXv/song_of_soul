@@ -223,7 +223,6 @@ public abstract class FSMManager<T1,T2> : MonoBehaviour
 #endregion
     protected virtual void Update()
     {
-
         if (currentState != null)
         {
             //Ö´ÐÐ×´Ì¬ÄÚÈÝ
