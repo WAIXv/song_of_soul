@@ -9,11 +9,18 @@ public enum EventType
 
     //Enemy Behavious
     onEnemyHitWall,
+    onItemChange,
+    onMoneyChange,
+    onKeyChange,//
+
+    Repaint,
+    Layout,
+
 }
 
 public class EventDate
 {
-    /*ÔÊÐí´«µÝµÄ²ÎÊý*/
+    /*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÝµÄ²ï¿½ï¿½ï¿½*/
     public float floatValue;
     public bool boolValue;
     public int intValue;

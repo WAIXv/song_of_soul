@@ -9,7 +9,7 @@ public class SceneTransitionPoint : Trigger2DBase
     public bool resetInputValuesOnTransition = true;
 
     protected override void enterEvent()
-    {
-        SceneController.TransitionToScene(this);
+    {        
+       SceneController.TransitionToScene(this);
     }
 }

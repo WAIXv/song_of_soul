@@ -1,50 +1,178 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Inventory;
+using Unity.Collections;
+using Unity.Mathematics;
+using UnityEditor;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(Animator))]
+[System.Serializable]
+public struct PlayerInfo
+{
+    private PlayerController playerController;
+    public float sprintSpeed { get; private set; }
+
+    public float waterSprintSpeed;
+
+
+    public AnimationCurve breakMoonPositionCurve;
+    //climb
+
+    public bool playerFacingRight;
+    //swim
+
+    public void init(PlayerController playerController)
+    {
+        this.playerController = playerController;
+
+        sprintSpeed = Constants.PlayerSprintDistance / Constants.SprintTime;
+        waterSprintSpeed= Constants.PlayerWaterSprintDistance / Constants.WaterSprintTime;
+
+        //----------------------for test-----------------------------
+#if UNITY_EDITOR
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanNormalAttack, learnAttack);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanSprint,learnSprint);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanBreakMoon,learnBreakMoon);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanCastSkill,learnCastSkill);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanToCat,learnToCat);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanPlunge,learnPlunge);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanClimbIdle,learnClimb);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanSing,learnSing);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanDive,learnDive);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanWaterSprint, learnWaterSprint);
+        playerController.playerStatusDic.learnSkill(EPlayerStatus.CanHeartSword,learnHeartSword);
+
+        GameManager.Instance.saveSystem.setDoubleJump(haveDoubleJump);
+        GameManager.Instance.saveSystem.setSoulJump(haveSoulJump);
+#endif 
+    }
+
+
+    public float getJumpUpSpeed()
+    {
+        if (playerController.playerToCat.IsCat) return Constants.PlayerCatJumpUpSpeed;
+        else return Constants.PlayerJumpUpSpeed;
+    }
+
+    public float getJumpHeight()
+    {
+        if (playerController.playerToCat.IsCat) return Constants.PlayerCatJumpHeight;
+        else return Constants.PlayerJumpMaxHeight;
+    }
+
+
+    //----------------------for test-----------------------------
+#if UNITY_EDITOR
+    public bool learnAttack;
+    public bool learnSprint;
+    public bool learnBreakMoon;
+    public bool learnCastSkill;
+    public bool learnToCat;
+    public bool learnPlunge;
+    public bool learnClimb;
+    public bool learnSing;
+    public bool learnDive;
+    public bool learnWaterSprint;
+    public bool learnHeartSword;
+
+    public bool haveSoulJump;
+    public bool haveDoubleJump;
+#endif
+
+}
+
+
+[RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
     public static PlayerController Instance { get; set; }
-    //animator∫ÕΩ«…´◊¥Ã¨œ‡πÿ
-    public PlayerAnimatorStatesControl PlayerAnimatorStatesControl { get; private set; }
-    //Ω«…´ÀÆ∆Ω“∆∂Øº”ºıÀŸøÿ÷∆£¨≥ı º…Ë∂®÷µ£∫£®◊‹ ±º‰◊‹ «…Ë∂®Œ™1£¨µÿ√Ê…œº”ÀŸ£¨µÿ√Ê…œºıÀŸ£¨ø’÷–º”ÀŸ£¨ø’÷–ºıÀŸ£©£¨∂ØÃ¨øÿ÷∆º˚¿‡÷– Ù–‘
-    public CharacterMoveControl PlayerHorizontalMoveControl { get; } 
+    public PlayerAnimatorStatesControl playerAnimatorStatesControl { get; private set; }
+
+    public PlayerAnimatorParamsMapping animatorParamsMapping;
+
+    public PlayerStatesBehaviour playerStatesBehaviour;
+
+    public PlayerStatusDic playerStatusDic;
+
+    [HideInInspector]
+    public PlayerCharacter playerCharacter;
+    public CharacterMoveControl PlayerHorizontalMoveControl { get; }
         = new CharacterMoveControl(1f, 5f, 8f, 8f, 10f);
 
-    public bool IsGrounded { get; set; }
-    public int CurrentAirExtraJumpCountLeft { get; private set; }
-    //ª˘¥° ˝÷µ£¨ƒ‹“∆∂Ø ˝æ›µƒø…“‘»´≤ø“∆÷¡’‚¿Ô∑Ω±„π‹¿Ì
     public PlayerInfo playerInfo;
 
-    private Vector2 m_MoveVector = new Vector2();
-    private int m_LastHorizontalInputDir;
+    private int lastHorizontalInputDir;
 
-    public SpriteRenderer SpriteRenderer { get; private set; }
-    public Animator PlayerAnimator { get; private set; }
-    //[SerializeField, HideInInspector]
-    public Rigidbody2D RB { get; private set; }
+    public Animator PlayerAnimator;
 
-    [SerializeField] private LayerMask groundLayerMask;
-    [SerializeField] private LayerMask ropeLayerMask;
+    private Rigidbody2D RB;//Â§ñÈÉ®ËÆøÈóÆÂàö‰ΩìÊó∂ÔºåÂ∫îÈÄöËøásetRigidGravityScaleÁ≠âÂ∞ÅË£ÖÂêéÁöÑÊñπÊ≥ï
 
-    private CapsuleCollider2D m_BodyCapsuleCollider;
-    [SerializeField] private CapsuleCollider2D groundCheckCapsuleCollider;
+    public Transform m_Transform { get; set; }
+    //[SerializeField] private LayerMask underwaterLayerMask;
+    [ReadOnly]
+    public BoxCollider2D boxCollider;
+
+    private PlayerGroundedCheck playerGroundedCheck;
+
+    [ReadOnly]
+    public PlayerToCatAndHuman playerToCat;
+
+    [ReadOnly]
+    public bool gravityLock;//‰∏∫tureÊó∂Ôºå‰∏çÂÖÅËÆ∏gravityScaleÊîπÂèò
+    private bool isUnderWater;
+    public bool IsUnderWater
+    {
+        get { return isUnderWater; }
+        set 
+        {
+            if(!isUnderWater && value)
+            {
+                PlayerAnimator.SetTrigger(animatorParamsMapping.IntoWaterParamHash);
+            }
+            isUnderWater = value;
+        }
+    }
+    
+
+    public CircleCollider2D underWaterCheckCollider;
+    public CapsuleCollider2D groundCheckCollider;
+
+    // plunge
+    public float[] plungeStrengthArr = { 0.0f, 1.0f, 3.0f };  // plungeÁªèËøá‰∫ÜPlungeStrength[i]ÁöÑË∑ùÁ¶ªÔºåËææÂà∞Âº∫Â∫¶Á∫ßÂà´i„ÄÇÂèØÈÖçÁΩÆ
+
+    private float distanceToGround = -1.0f;  // Ë∑ùÁ¶ª‰∏ãÊñπGroudË∑ùÁ¶ª
+
+    #region ÁâπÊïà
+    [Header("ÁâπÊïà")]
+    public ParticleSystem climp;
+    public ParticleSystem climpLight;
+    public ParticleSystem dash;
+    public ParticleSystem jump;
+    public ParticleSystem plunge;
+    public ParticleSystem hurt;
+    public ParticleSystem lighting;
+    #endregion
+
+    InvulnerableDamable damable;
+
+    public SoulSkillController SoulSkillController;
+
+
+
     //Teleport
-    [SerializeField] private GameObject telePosition;
     /// <summary>
     /// Only Demo Code for save
     /// </summary>
-    [SerializeField] private string _guid;
-    [SerializeField] private SaveSystem _saveSystem;
-
+    //[SerializeField] private string _guid;
+    [SerializeField] public InventoryManager _backpack;
+    public GameObject _itemToAdd = null;
+    public GameObject _savePoint = null;
     public string GUID => GetComponent<GuidComponent>().GetGuid().ToString();
 
     private void OnValidate()
     {
-        _guid = GUID;
+        //_guid = GUID;
     }
     /// <summary>
     /// Demo code Ends
@@ -57,10 +185,16 @@ public class PlayerController : MonoBehaviour
         else
             throw new UnityException("There cannot be more than one PlayerController script.  The instances are " + Instance.name + " and " + name + ".");
         DontDestroyOnLoad(this.gameObject);
+
+        if(_backpack)
+            _backpack.LoadSave();
+
+        init();
     }
 
     private void OnEnable()
     {
+        //Debug.Log("Enable PlayerController");
         if (Instance == null)
             Instance = this;
         else if (Instance != this)
@@ -70,220 +204,419 @@ public class PlayerController : MonoBehaviour
     private void OnDisable()
     {
         Instance = null;
+        //Debug.Log("Disable PlayerController");
     }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.CompareTag("CollectableItem"))
+        {
+            Debug.Log("Colide with Item");
+            _itemToAdd = other.gameObject;
+        }
+        if (other.gameObject.CompareTag("SavePoint"))
+        {
+            Debug.Log("Colide with SavePoint");
+            _savePoint = other.gameObject;
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        _itemToAdd = null;
+        _savePoint = null;
+    }
+
+    public void CheckAddItem()
+    {
+        if (PlayerInput.Instance.Pick.IsValid)
+        {
+            if (_itemToAdd)
+            {
+                _backpack.AddItem(_itemToAdd.GetComponent<SceneItem>().GetItem());
+                _itemToAdd.SetActive(false);
+            }
+        }
+    }
+    public void CheckSavePoint()
+    {
+        if (PlayerInput.Instance.Pick.IsValid)
+        {
+            if (_savePoint)
+            {
+                GameManager.Instance.saveSystem.SaveDataToDisk();
+            }
+        }
+    }
+
+    
+    public void init()
+    {
+        RB = GetComponent<Rigidbody2D>();
+        boxCollider = GetComponent<BoxCollider2D>();
+        playerCharacter = GetComponent<PlayerCharacter>();
+        playerGroundedCheck = new PlayerGroundedCheck(this);
+        playerToCat = new PlayerToCatAndHuman(this);
+
+        playerAnimatorStatesControl = new PlayerAnimatorStatesControl(this, PlayerAnimator, EPlayerState.Idle);
+        animatorParamsMapping = playerAnimatorStatesControl.CharacterAnimatorParamsMapping;
+        playerStatesBehaviour = playerAnimatorStatesControl.CharacterStatesBehaviour;
+        playerStatusDic = playerAnimatorStatesControl.PlayerStatusDic;
+
+        SoulSkillController.SoulSkillInit(this);
+    }
+
 
     void Start()
     {
+        playerInfo.init(this);
         // _saveSystem.TestSaveGuid(_guid);
-        RB = GetComponent<Rigidbody2D>();
-        //RB.sharedMaterial = new PhysicsMaterial2D() { bounciness = 0, friction = 0, name = "NoFrictionNorBounciness" };
-        m_BodyCapsuleCollider = GetComponent<CapsuleCollider2D>();
-        SpriteRenderer = GetComponent<SpriteRenderer>();
-        PlayerAnimator = GetComponent<Animator>();
-        PlayerAnimatorStatesControl = new PlayerAnimatorStatesControl(this, PlayerAnimator, EPlayerState.Idle);
+        RB.gravityScale = Constants.PlayerNormalGravityScale;
+        m_Transform = GetComponent<Transform>();
+
         WhenStartSetLastHorizontalInputDirByFacing();
+
+        damable = GetComponent<InvulnerableDamable>();
+        damable.takeDamageEvent.AddListener(getHurt);
+        damable.onDieEvent.AddListener(die);
     }
 
+    
     private void Update()
     {
-        PlayerAnimatorStatesControl.PlayerStatusUpdate();
-        PlayerAnimatorStatesControl.ParamsUpdate();
+        CheckIsGrounded();
+        CheckUnderWater();
+        CheckHasWallToClimb();
+        //checkWaterSurface();
+        
+
+        CalDistanceToGround(); 
+        CheckHasHeightToPlunge();
+
+        //TickLightningChain();// Êåâ‰∏ãRËøõÂÖ•Èó™ÁîµÈìæÁÅµÈ≠ÇÁä∂ÊÄÅ
+        //TODOÔºöÊîπ‰∏∫Êåâ‰∏ãR‰πãÂêéÊ†πÊçÆË£ÖÈÖçÁöÑÊä§Á¨¶ÂºÄÂêØÂØπÂ∫îÁä∂ÊÄÅ
+        SoulSkillController.TickSoulSkill();
+
+        playerAnimatorStatesControl.ParamsUpdate();
+        playerToCat.catUpdate();
     }
 
     private void LateUpdate()
     {
-        PlayerAnimatorStatesControl.BehaviourLateUpdate();
+        playerAnimatorStatesControl.BehaviourLateUpdate();
     }
 
     private void FixedUpdate()
     {
-        //HorizontalMove();
-        //Jump();
-        //Sprint();
-        //Teleport();
-        //VerticalMove();
+        //Interact();
+       // Debug.Log(RB.velocity);
     }
 
-    public void VerticalMove()
+
+   
+
+    public void endJumpByUpAttack()
     {
-        // check is on rope
-        if (IsRope())
-        {
-            // PInput.Vertical.Value onchange start climbing
-            if (PlayerInput.Instance.vertical.Value != 0)
-            {
-                OnClimb();
-            }
-
-            // if jump unClimb
-            if (PlayerInput.Instance.jump.Down)
-            {
-                UnClimb();
-            }
-        }
-        // unClimb
-        else
-        {
-            UnClimb();
-        }
+        (playerStatesBehaviour.StateActionsDic[EPlayerState.Jump] as PlayerJump).EndJump();
+        setRigidVelocity(Vector2.zero);
+        //print("end");
     }
-    public void CheckJump()
-    {
-        //bool ground = IsGround();
-        //Debug.Log(ground);
-        //if (PlayerInput.Instance.jump.Down)
-        //{
-        //    Debug.Log(ground.ToString());
-        //    if (ground)
-        //    {
-        //        m_secondJump = false;
-
-        //        rb.velocity = new Vector3(RB.velocity.x, jumpHeight, 0);
-        //        Debug.Log("jump");
-        //    }else if (!m_secondJump)
-        //    {
-        //        m_secondJump = true;
-        //        rb.velocity = new Vector3(RB.velocity.x, jumpHeight, 0);
-        //        print("second jump");
-        //    }
-
-        //}
-        if (CurrentAirExtraJumpCountLeft > 0 || IsGrounded)
-        {
-            if (PlayerInput.Instance.jump.IsValid)
-            {
-                PlayerInput.Instance.jump.SetValidToFalse();
-                if (!IsGrounded)
-                    --CurrentAirExtraJumpCountLeft;
-                m_MoveVector.Set(RB.velocity.x, playerInfo.jumpHeight);
-                RB.velocity = m_MoveVector;
-            }
-        }
-    }
-
-    public void ResetJumpCount() => CurrentAirExtraJumpCountLeft = playerInfo.maxAirExtraJumpCount;
 
     public void CheckHorizontalMove(float setAccelerationNormalizedTime)
     {
         PlayerHorizontalMoveControl.SetAccelerationLeftTimeNormalized(setAccelerationNormalizedTime);
         RecordLastInputDir();
-        float desireSpeed = m_LastHorizontalInputDir * playerInfo.speed;
-        float acce = PlayerHorizontalMoveControl.AccelSpeedUpdate(PlayerInput.Instance.horizontal.Value != 0, IsGrounded, desireSpeed);
-        m_MoveVector.Set(acce, RB.velocity.y);
-        RB.velocity = m_MoveVector;
+
+        float desireSpeed = lastHorizontalInputDir * playerCharacter.getMoveSpeed();
+        float acce = PlayerHorizontalMoveControl.AccelSpeedUpdate(PlayerInput.Instance.horizontal.Value != 0 && PlayerAnimatorParamsMapping.HaveControl(),playerGroundedCheck.IsGroundedBuffer, desireSpeed);
+        RB.velocity = new Vector2(acce, RB.velocity.y);
 
         void RecordLastInputDir()
         {
             if (PlayerInput.Instance.horizontal.Value == 1)
-                m_LastHorizontalInputDir = 1;
+                lastHorizontalInputDir = 1;
             else if (PlayerInput.Instance.horizontal.Value == -1)
-                m_LastHorizontalInputDir = -1;
+                lastHorizontalInputDir = -1;
         }
     }
 
-    public void Sprint()
+    public void Interact()
     {
-        if (PlayerInput.Instance.sprint.Down)
+        if (PlayerInput.Instance.interact.Down)
         {
-            MovementScript.Sprint(playerInfo.sprintForce, transform.position, RB);
+            InteractManager.Instance.Interact();
         }
-    }
-    public void Teleport()
-    {
-        if (PlayerInput.Instance.teleport.Down)
-        {
-            MovementScript.Teleport(telePosition.transform.position, RB);//Transfer to the specified location
-        }
-    }
-
-    // 1 << 6 is ground    7 is rope    8 is player
-    bool IsBlock(LayerMask ignoreMask)
-    {
-        Vector2 point = (Vector2)groundCheckCapsuleCollider.transform.position + groundCheckCapsuleCollider.offset;
-        Collider2D collider = Physics2D.OverlapCapsule(point, groundCheckCapsuleCollider.size, groundCheckCapsuleCollider.direction, 0, ignoreMask);
-
-        return collider != null;
     }
 
     public void CheckIsGrounded()
     {
-        // Vector2 point = (Vector2)capsuleCollider.transform.position + capsuleCollider.offset;
-        // LayerMask ignoreMask = ~(1 << 8 | 1 << 7); // fixed ignore ropeLayer
-        // Collider2D collider = Physics2D.OverlapCapsule(point, capsuleCollider.size, capsuleCollider.direction, 0,ignoreMask);
-        // return collider != null;
-        IsGrounded = IsBlock(groundLayerMask);
-    }
-
-    public void CheckIsGroundedAndResetAirJumpCount()
-    {
-        CheckIsGrounded();
-        if (IsGrounded)
-            ResetJumpCount();
-    }
-
-    bool IsRope()
-    {
-        return IsBlock(ropeLayerMask);
-    }
-
-    private void OnClimb()
-    {
-        // velocity is rb current force
-        RB.velocity = Vector3.zero;
-
-        // if isClimb rb.pos is PInput.Vertical.Value
-        if (playerInfo.isClimb)
+        int groundLayerMask = 1<<LayerMask.NameToLayer("Ground");
+        if(playerToCat.IsCat)
         {
-            Vector2 pos = transform.position;
-            pos.y += playerInfo.climbSpeed * PlayerInput.Instance.vertical.Value * Time.deltaTime;
-            RB.MovePosition(pos);
+            groundLayerMask += 1<<LayerMask.NameToLayer("CloudMass");
         }
-        // togging isClimb and gravityScale is 0
-        else
-        {
-            RB.gravityScale = 0;
-            playerInfo.isClimb = true;
-        }
+        playerGroundedCheck.IsGrounded = groundCheckCollider.IsTouchingLayers(groundLayerMask);
     }
 
-    private void UnClimb()
+    public bool isGroundedBuffer()
     {
-        // togging isClimb and recovery gravityScale
-        if (playerInfo.isClimb)
-        {
-            RB.gravityScale = playerInfo.gravity;
-            playerInfo.isClimb = false;
-        }
+        return playerGroundedCheck.IsGroundedBuffer;
     }
-
-    public void CheckFlipPlayer(float setAccelerationNormalizedTime)
+    public bool isGrounded()
     {
-        if (PlayerInput.Instance.horizontal.Value == 1f & !playerInfo.playerFacingRight ||
-                PlayerInput.Instance.horizontal.Value == -1f & playerInfo.playerFacingRight)
+        return playerGroundedCheck.IsGrounded;
+    }
+    public int getJumpCount()
+    {
+        if (GameManager.Instance.saveSystem.haveDoubleJump()) return Constants.PlayerMaxDoubleJumpCount;
+        else return Constants.PlayerMaxJumpCount;
+    }
+    public void CheckFlipPlayer(float setAccelerationNormalizedTime=1f)
+    {
+        if (PlayerInput.Instance.horizontal.ValueBuffer == 1f & !playerInfo.playerFacingRight ||
+                PlayerInput.Instance.horizontal.ValueBuffer == -1f & playerInfo.playerFacingRight)
         {
-            MovementScript.Flip(SpriteRenderer, ref playerInfo.playerFacingRight, m_BodyCapsuleCollider, groundCheckCapsuleCollider);
+            Flip();
             PlayerHorizontalMoveControl.SetAccelerationLeftTimeNormalized(setAccelerationNormalizedTime);
         }
     }
 
-    public void WhenStartSetLastHorizontalInputDirByFacing() => m_LastHorizontalInputDir = playerInfo.playerFacingRight ? 1 : -1;
+    public void setRigidVelocity(Vector2 newVelocity)
+    {
+        //Debug.Log("set"+" "+newVelocity);
+        RB.velocity = newVelocity;
+    }
+
+    public Vector2 getRigidVelocity()
+    {
+        return RB.velocity;
+    }
+    public void addRigidVelocityY(float forceY)
+    {
+        RB.AddForce(new Vector2(0, forceY), ForceMode2D.Impulse);
+    }
+
+    public void setRigidGravityScale(float newScale)
+    {
+        if (gravityLock == false)
+            RB.gravityScale = newScale;
+        
+    }
+
+    public void setRigidGravityScaleToNormal()
+    {
+        setRigidGravityScale(Constants.PlayerNormalGravityScale);
+    }
+
+    public void rigidMovePosition(Vector2 target)
+    {
+        RB.MovePosition(target);
+    }
+
+    public void setRigidLinearDrag(float linearDarg)
+    {
+        RB.drag = linearDarg;
+    }
+    public void WhenStartSetLastHorizontalInputDirByFacing() => lastHorizontalInputDir = playerInfo.playerFacingRight ? 1 : -1;
+
+    public void Flip()
+    {
+        playerInfo.playerFacingRight = !playerInfo.playerFacingRight;
+        Vector3 t = transform.localScale;
+        transform.localScale = new Vector3(-t.x, t.y, t.z);
+        PlayerBreakMoon playerBreakMoon = (PlayerBreakMoon)playerStatesBehaviour.StateActionsDic[EPlayerState.BreakMoon];
+        playerBreakMoon .findCurrentTarget();
+    }
+
+    public void getHurt(DamagerBase damager, DamageableBase damable)
+    {
+        PlayerAnimator.SetTrigger(animatorParamsMapping.HurtParamHas);
+        playerToCat.toHuman();
+        //Debug.Log("Âèó‰º§");
+    
+    }
+
+    public void die(DamagerBase damager, DamageableBase damable)
+    {
+        PlayerAnimator.SetBool(animatorParamsMapping.DeadParamHas, true);
+    }
+
+    public void CheckUnderWater()
+    {
+        IsUnderWater = underWaterCheckCollider.IsTouchingLayers(1<<LayerMask.NameToLayer("GameWater"));
+    }
+
+
+    public void CalDistanceToGround()
+    {
+
+        Vector2 groundCheckPos = groundCheckCollider.transform.position;
+        groundCheckPos = groundCheckPos + groundCheckCollider.offset;
+        Vector2 offset = new Vector2(0, -groundCheckCollider.bounds.size.y / 2);
+         //Debug.DrawRay(groundCheckPos + offset, Vector2.down, Color.red, 0.2f);
+
+        int groundLayerMask = 1 << LayerMask.NameToLayer("Ground");
+
+        // Âêë‰∏ãÂèëÂ∞ÑÂ∞ÑÁ∫øÔºåÊ£ÄÊµãË∑üGround LayerÁöÑË∑ùÁ¶ª„ÄÇÂ¶ÇÊûú‰∏ãÊñπÊ≤°ÊúâGroundÂàôdistanceToGround = -1.
+        RaycastHit2D hit = Physics2D.Raycast(groundCheckPos + offset, Vector2.down, 100.0f, groundLayerMask);
+        if (hit.collider == null)
+        {
+            distanceToGround = -1.0f;
+        }
+        else
+        {
+            distanceToGround = hit.distance;
+        }
+
+        // Debug.Log(distanceToGround);
+
+    }
+
+    public void CheckHasHeightToPlunge() {
+        if (distanceToGround >Constants.canPlungeHeight) {
+            PlayerAnimator.SetBool(animatorParamsMapping.HasHeightToPlungeParamHash, true);
+        }
+        else {
+            PlayerAnimator.SetBool(animatorParamsMapping.HasHeightToPlungeParamHash, false);
+        }
+
+    }
+
+    public bool checkHitWall(bool checkRightSide)
+    {
+        Vector2 t = transform.position;
+        t.y += 0.5f;//at player head
+
+        Vector2 frontPoint;
+        frontPoint = new Vector2(t.x + (checkRightSide?1:-1) * boxCollider.size.x * 0.5f , t.y);
+
+        if (Physics2D.OverlapArea(frontPoint, transform.position, 1 << LayerMask.NameToLayer("Ground")) != null)
+        {
+            return true;
+        }
+
+        return false;
+
+    }
+
+    public bool checkWaterSurface()//only callded when used in player actions
+    {
+
+        Vector2 t = transform.position;
+        t.y += 0.4f;//when water below this height,return true
+
+        Vector2 upPoint = new Vector2(t.x+0.1f,t.y+0.1f);
+       // Debug.DrawLine(t, upPoint,Color.red);
+        bool ret = false;
+        if (Physics2D.OverlapArea(upPoint, t, 1 << LayerMask.NameToLayer("GameWater")) == null)
+        {
+            ret=true;
+        }
+        PlayerAnimator.SetBool(animatorParamsMapping.WaterSurfaceParamHash, ret);
+        return ret;
+
+    }
+
+    private void CheckHasWallToClimb()
+    {
+        bool checkRightSide;
+       
+        float horizontalInput = PlayerInput.Instance.horizontal.Value;
+        if (horizontalInput == 1) checkRightSide = true;
+        else if (horizontalInput == -1) checkRightSide = false;
+        else //input==0
+        {
+            if (playerAnimatorStatesControl.CurrentPlayerState == EPlayerState.ClimbIdle)
+            {
+                
+                checkRightSide = playerInfo.playerFacingRight;
+            }
+            else
+            {
+                //climp.Play();
+                PlayerAnimator.SetBool(animatorParamsMapping.HasWallForClimbParamHash, false);
+                return;
+            }
+              
+        }
+        
+       
+        PlayerAnimator.SetBool(animatorParamsMapping.HasWallForClimbParamHash,checkHitWall(checkRightSide));
+    }
+
+
+    public void checkMaxFallSpeed()
+    {
+        if (RB.velocity.y < -Constants.PlayerMaxFallSpeed)
+        {
+           RB.velocity= new Vector2(RB.velocity.x, -Constants.PlayerMaxFallSpeed);
+        }
+    }
 }
 
-[System.Serializable]
-public struct PlayerInfo
+public class PlayerGroundedCheck
 {
-    //move
-    public float speed;
-    public float jumpHeight;
+    private bool isGrounded;
+    private PlayerController playerController;
+    private int bufferTimer;
+    private bool isGroundedBuffer;
+    //private int bufferGroundTrue;
+    public PlayerGroundedCheck(PlayerController playerController)
+    {
+        this.playerController = playerController;
+    }
+    public bool IsGrounded
+    {
+        get
+        {
+            return isGrounded;
+        }
 
-    //jump
-    public float sprintForce;
-    public int maxAirExtraJumpCount;
+        set//ÊØèÊ¨°updateÈÉΩ‰ºöË∞ÉÁî®
+        {
+            if (value && playerController.IsUnderWater==false)//ËÆæ‰∏∫Áúü
+            {
 
-    //climb
-    public int gravity;
-    public int climbSpeed;
-    public bool isClimb;
+                ( playerController.playerStatesBehaviour.StateActionsDic[EPlayerState.Jump] as PlayerJump) .resetAllJumpCount();
+                ( playerController.playerStatesBehaviour.StateActionsDic[EPlayerState.Sprint] as PlayerSprint).resetAirSprintLeftCount();
+                bufferTimer = Constants.IsGroundedBufferFrame;
+            }
+     
 
-    public bool playerFacingRight;
+            if (bufferTimer > 0)
+            {
+                bufferTimer--;
+                IsGroundedBuffer = true;
+            }
+            else
+            {
+                IsGroundedBuffer = false;
+            }
+
+            isGrounded = value;
+        }
+    }
+
+    public bool IsGroundedBuffer
+    {
+        get { return isGroundedBuffer; }
+        set
+        {      
+
+            if (isGroundedBuffer &&!value && playerController.IsUnderWater == false)//‰ªéÁúüËÆæ‰∏∫ÂÅá
+            {
+                (playerController.playerStatesBehaviour.StateActionsDic[EPlayerState.Jump] as PlayerJump).CurrentJumpCountLeft--;
+            }
+            isGroundedBuffer = value;
+        }
+    
+    }
+
 }
+
+
+
+
+
+
+

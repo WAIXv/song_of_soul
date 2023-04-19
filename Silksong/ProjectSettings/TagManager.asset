@@ -3,7 +3,18 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - CollectableItem
+  - GamingUI
+  - SavePoint
+  - UnderWater
+  - Water
+  - InteractObject
+  - NPC
+  - UIMenu_PlayerStatus
+  - DestructiblePlatform
+  - PlayerGroundCheck
+  - word
   layers:
   - Default
   - TransparentFX
@@ -14,28 +25,28 @@ TagManager:
   - Ground
   - Rope
   - Attackable
+  - GameWater
   - 
-  - 
-  - 
-  - 
+  - InteractObject
+  - NPC
   - 
   - Player
   - Enemy
+  - PlayerCat
+  - CloudEnemy
   - 
-  - 
-  - 
-  - 
+  - coin
   - PlayerDamager
   - PlayerBulletDamager
   - MidDamager
   - EnemyDamager
+  - CloudMass
+  - FGUIRendering
   - 
   - 
   - 
   - 
-  - 
-  - 
-  - 
+  - CameraVolumeBoundaryCheck
   - 
   m_SortingLayers:
   - name: Default

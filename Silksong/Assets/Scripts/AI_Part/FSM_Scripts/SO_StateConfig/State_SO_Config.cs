@@ -65,6 +65,7 @@ public class State_SO_Config<T1, T2, T3, T4> : ScriptableObject
 }
 
 
+#if UNITY_EDITOR
 
 /// <summary>
 /// 辅助工具，用于Enemy_SO ,Inspirte面板的刷新
@@ -99,6 +100,13 @@ public class Enemy_State_SO_Config_Editor : Editor
             {
                 config.triggerConfig = Activator.CreateInstance(config.triggerType) as EnemyFSMBaseTrigger;
                 config.triggerConfig.triggerType = config.TriggerType;
+                if(config.TriggerType==EnemyTriggers.RandomTrigger)
+                {
+                    var tem = config.triggerConfig as RandomTrigger;
+                    Type t = Type.GetType(tem.insideTriggerType.ToString());
+                    tem.insideTrigger = Activator.CreateInstance(t) as EnemyFSMBaseTrigger;
+                    tem.insideTrigger.triggerType = tem.insideTriggerType;
+                }
             }
             else
                 Debug.LogError("找不到所对应的Trigger，请检查枚举名称是否与类名一致。");
@@ -227,4 +235,5 @@ public class DisplayOnlyDraw:PropertyDrawer
         GUI.enabled = true;
     }
 }
+#endif
 
